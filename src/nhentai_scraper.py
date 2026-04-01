@@ -258,10 +258,8 @@ class Gallery:
 
         self.metadata = api_response.json()
         self._parse_metadata()
-        self._parse_ComicInfo_xml()
-
-        logger.info("Metadata retrieved")
-        logger.info(f"Title: {self.title}")
+        if self.filetype == "cbz":
+            self._parse_ComicInfo_xml()
 
         return self.metadata
 
@@ -289,6 +287,9 @@ class Gallery:
 
         if self.additional_tags:
             self.tags.extend(self.additional_tags)
+
+        logger.info("Metadata retrieved")
+        logger.info(f"Title: {self.title}")
 
     def check_blacklist(self, blacklist: Optional[list[str]] = None) -> None:
 
@@ -365,10 +366,11 @@ class Gallery:
         with open(json_filename, "w", encoding="utf-8") as f:
             json.dump(self.metadata, f, ensure_ascii=False, indent=4)
 
-        xml_filename = f"{self.folder_dir}/ComicInfo.xml"
-        self.ComicInfo_tree.write(
-            xml_filename, xml_declaration=True, encoding="utf-8"
-        )
+        if self.filetype == "cbz":
+            xml_filename = f"{self.folder_dir}/ComicInfo.xml"
+            self.ComicInfo_tree.write(
+                xml_filename, xml_declaration=True, encoding="utf-8"
+            )
 
     def _parse_ComicInfo_xml(self) -> None:
 
@@ -381,7 +383,6 @@ class Gallery:
             self.ComicInfo_tree.find("LocalizedSeries").text = self.metadata[
                 "title"
             ]["english"]
-            self.ComicInfo_tree.find("Number").text = str(self.id)
 
             parodies_list = []
             characters_list = []
@@ -454,11 +455,7 @@ class Gallery:
             self.ComicInfo_tree.find("Month").text = str(dt.month)
             self.ComicInfo_tree.find("Day").text = str(dt.day)
 
-            self.ComicInfo_tree.find("Translator").text = self.metadata[
-                "scanlator"
-            ]
-
-        elif self.server == "LANraragi":
+        elif self.server == "LANraragi" or self.server is None:
             self.ComicInfo_tree.find("Title").text = str(self)
             self.ComicInfo_tree.find("Web").text = f"nhentai.net/g/{self.id}"
 
